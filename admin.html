@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Admin</title>
+
+<style>
+body {
+    font-family: Arial;
+    padding: 20px;
+}
+
+input, textarea {
+    width: 100%;
+    margin: 5px 0;
+    padding: 10px;
+}
+
+button {
+    padding: 10px;
+    margin-top: 5px;
+    width: 100%;
+}
+
+.section {
+    margin-bottom: 30px;
+    border: 1px solid #ccc;
+    padding: 15px;
+    border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Dashboard Admin - Sipira Shop</h2>
+
+<!-- TAMBAH PRODUK -->
+<div class="section">
+<h3>Tambah Produk</h3>
+<input type="text" id="nama" placeholder="Nama Produk">
+<input type="text" id="harga" placeholder="Harga">
+<input type="text" id="img" placeholder="Link Gambar">
+<button onclick="tambahProduk()">Tambah</button>
+</div>
+
+<!-- PENGATURAN -->
+<div class="section">
+<h3>Pengaturan</h3>
+
+<label>No WhatsApp</label>
+<input type="text" id="wa">
+
+<label>Link Background</label>
+<input type="text" id="bg">
+
+<label>Popup Iklan</label>
+<textarea id="popup"></textarea>
+
+<label>Maintenance Text</label>
+<input type="text" id="mt">
+
+<label>Mode Maintenance</label>
+<button onclick="toggleMaintenance()">ON / OFF</button>
+
+<button onclick="simpanSetting()">Simpan Setting</button>
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("sipiraData")) || {
+    products: [],
+    wa: "",
+    background: "",
+    maintenance: false,
+    maintenanceText: "",
+    popup: ""
+};
+
+// isi form
+document.getElementById("wa").value = data.wa;
+document.getElementById("bg").value = data.background;
+document.getElementById("popup").value = data.popup;
+document.getElementById("mt").value = data.maintenanceText;
+
+// tambah produk
+function tambahProduk(){
+    let nama = document.getElementById("nama").value;
+    let harga = document.getElementById("harga").value;
+    let img = document.getElementById("img").value;
+
+    data.products.push({nama, harga, img});
+    simpan();
+    alert("Produk ditambahkan!");
+}
+
+// toggle maintenance
+function toggleMaintenance(){
+    data.maintenance = !data.maintenance;
+    simpan();
+    alert("Maintenance: " + (data.maintenance ? "ON" : "OFF"));
+}
+
+// simpan setting
+function simpanSetting(){
+    data.wa = document.getElementById("wa").value;
+    data.background = document.getElementById("bg").value;
+    data.popup = document.getElementById("popup").value;
+    data.maintenanceText = document.getElementById("mt").value;
+
+    simpan();
+    alert("Setting disimpan!");
+}
+
+// simpan ke localStorage
+function simpan(){
+    localStorage.setItem("sipiraData", JSON.stringify(data));
+}
+</script>
+
+</body>
+</html>
