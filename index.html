@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sipira Shop Website</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background-size: cover;
+}
+
+header {
+    background: rgba(0,0,0,0.6);
+    color: white;
+    padding: 15px;
+    text-align: center;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+    gap: 15px;
+    padding: 15px;
+}
+
+.product {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    padding: 10px;
+}
+
+.product img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background: #0a84ff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    margin-top: 5px;
+}
+
+.review-box {
+    margin-top: 10px;
+    border-top: 1px solid #ddd;
+    padding-top: 10px;
+}
+
+.review {
+    font-size: 13px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 5px;
+}
+
+.star {
+    cursor: pointer;
+    font-size: 18px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h2>Sipira Shop</h2>
+</header>
+
+<div class="container" id="products"></div>
+
+<audio id="music" autoplay loop></audio>
+
+<footer style="text-align:center;padding:20px;">
+© Sipira Shop @2026
+</footer>
+
+<script>
+// ================== SUPABASE ==================
+const supabase = window.supabase.createClient(
+"https://aygkrrndouoicelgwqce.supabase.co",
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5Z2tycm5kb3VvaWNlbGd3cWNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1ODY2MTEsImV4cCI6MjA5MDE2MjYxMX0.gSHuI8UNhxQrPTmaYFY4UmJVM-D2NGJZJUOpN9AIUVQ"
+);
+
+// ================== DEVICE ID ==================
+let deviceId = localStorage.getItem("device_id");
+if(!deviceId){
+    deviceId = Math.random().toString(36).substr(2,9);
+    localStorage.setItem("device_id", deviceId);
+}
+
+// ================== DATA ==================
+let data = JSON.parse(localStorage.getItem("sipiraData")) || {
+    products: [],
+    wa: "",
+    background: "",
+    music: ""
+};
+
+// background
+if(data.background){
+    document.body.style.backgroundImage = `url('${data.background}')`;
+}
+
+// music
+if(data.music){
+    document.getElementById("music").src = data.music;
+}
+
+// ================== RENDER PRODUK ==================
+async function render(){
+    let el = document.getElementById("products");
+    el.innerHTML = "";
+
+    for (let p of data.products){
+
+        // ambil review
+        let { data: reviews } = await supabase
+        .from("reviews")
+        .select("*")
+        .eq("product", p.nama);
+
+        let reviewHTML = "";
+        let sudah = false;
+
+        reviews?.forEach(r=>{
+            if(r.device_id === deviceId) sudah = true;
+
+            reviewHTML += `
+            <div class="review">
+                ⭐ ${r.rating}/5 - ${r.comment}
+            </div>`;
+        });
+
+        el.innerHTML += `
+        <div class="product">
+            <img src="${p.img}">
+            <h4>${p.nama}</h4>
+            <p>Rp ${p.harga}</p>
+
+            <button onclick="beli('${p.nama}')">Beli</button>
+
+            <div class="review-box">
+                <b>Ulasan:</b>
+                ${reviewHTML || "Belum ada ulasan"}
+
+                ${!sudah ? `
+                <div>
+                    <input type="text" id="nama-${p.nama}" placeholder="Nama">
+                    <div id="star-${p.nama}">
+                        ⭐⭐⭐⭐⭐
+                    </div>
+                    <input type="number" id="rate-${p.nama}" placeholder="Rating 1-5">
+                    <input type="text" id="komen-${p.nama}" placeholder="Komentar">
+                    <button onclick="kirimReview('${p.nama}')">Kirim</button>
+                </div>
+                ` : "<i>Anda sudah memberi ulasan</i>"}
+            </div>
+        </div>
+        `;
+    }
+}
+
+render();
+
+// ================== BELI ==================
+function beli(nama){
+    window.open(`https://wa.me/6285800114299${data.wa}?text=Saya mau beli ${nama}`);
+}
+
+// ================== KIRIM REVIEW ==================
+async function kirimReview(namaProduk){
+
+    let nama = document.getElementById(`nama-${namaProduk}`).value;
+    let rating = document.getElementById(`rate-${namaProduk}`).value;
+    let comment = document.getElementById(`komen-${namaProduk}`).value;
+
+    if(!nama || !rating || !comment){
+        alert("Lengkapi dulu!");
+        return;
+    }
+
+    // cek sudah review
+    let { data: cek } = await supabase
+    .from("reviews")
+    .select("*")
+    .eq("product", namaProduk)
+    .eq("device_id", deviceId);
+
+    if(cek.length > 0){
+        alert("Anda sudah review!");
+        return;
+    }
+
+    await supabase.from("reviews").insert([{
+        product: namaProduk,
+        name: nama,
+        rating: rating,
+        comment: comment,
+        device_id: deviceId
+    }]);
+
+    alert("Ulasan dikirim!");
+    render();
+}
+
+// auto refresh
+setInterval(render, 5000);
+</script>
+
+</body>
+</html>
